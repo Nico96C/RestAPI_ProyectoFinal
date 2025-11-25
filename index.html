@@ -205,28 +205,6 @@
                 console.error('Error updating item:', error);
                 alert('Error al actualizar el producto');
             }
-
-            if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-                return;
-            }
-
-            try {
-                const response = await authFetch(`${API_BASE}/products/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    console.log('Producto eliminado exitosamente');
-                    allItems(); // Actualizar la lista
-                } else {
-                    const error = await response.json();
-                    console.error('Error al eliminar producto:', error.message);
-                    alert('Error al eliminar el producto: ' + error.message);
-                }
-            } catch (error) {
-                console.error('Error deleting product:', error);
-                alert('Error al eliminar el producto');
-            }
         }
 
         // Eliminar producto //
