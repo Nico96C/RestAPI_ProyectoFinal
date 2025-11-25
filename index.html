@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
+        form { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 3px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #loginMessage { margin-top: 10px; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Sistema de Login</h1>
+    
+    <div id="login-section">
+        <h2>Inicia Sesión</h2>
+        <form id="loginForm">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="test@gmail.com" required>
+            
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" value="123456" required>
+            
+            <button type="submit">Login</button>
+        </form>
+        <p id="loginMessage"></p>
+    </div>
+
+    <div id="dashboard-section" style="display:none;">
+        <h2>Bienvenido</h2>
+        <p>Token guardado: <strong id="tokenDisplay"></strong></p>
+        
+        <h3>Productos</h3>
+        <ul id="items-list"></ul>
+        
+        <button onclick="logout()">Cerrar Sesión</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Función para obtener el token
+        const getToken = () => localStorage.getItem('token');
+
+        // Función para hacer fetch con autenticación
+        const authFetch = (url, options = {}) => {
+            const token = getToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            return fetch(url, { ...options, headers });
+        };
+
+        // Obtener todos los productos
+        async function allItems() {
+            const token = getToken();
+            if (!token) {
+                console.log('No hay token. Por favor, inicia sesión primero.');
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_BASE}/products`);
+                
+                if (!response.ok) {
+                    console.error('Error al obtener productos:', response.status);
+                    return;
+                }
+                
+                const items = await response.json();
+                const itemsList = document.getElementById('items-list');
+                itemsList.innerHTML = '';
+                
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `${item.name} - $${item.price} (${item.category})`;
+                    itemsList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching items:', error);
+            }
+        }
+
+        // Mostrar/ocultar secciones según si hay token
+        function updateUI() {
+            const token = getToken();
+            if (token) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                document.getElementById('tokenDisplay').textContent = token.substring(0, 20) + '...';
+                allItems(); // Cargar productos cuando se muestra el dashboard
+            } else {
+                document.getElementById('login-section').style.display = 'block';
+                document.getElementById('dashboard-section').style.display = 'none';
+            }
+        }
+
+        // Manejar el login
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageEl = document.getElementById('loginMessage');
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    messageEl.textContent = '✓ Login exitoso';
+                    messageEl.style.color = 'green';
+                    messageEl.style.backgroundColor = '#d4edda';
+                    setTimeout(() => updateUI(), 1000);
+                } else {
+                    const error = await response.json();
+                    messageEl.textContent = '✗ Error: ' + error.message;
+                    messageEl.style.color = 'white';
+                    messageEl.style.backgroundColor = '#f8d7da';
+                }
+            } catch (error) {
+                messageEl.textContent = '✗ Error de conexión: ' + error.message;
+                messageEl.style.color = 'white';
+                messageEl.style.backgroundColor = '#f8d7da';
+                console.error('Error:', error);
+            }
+        });
+
+        // Función para logout
+        function logout() {
+            localStorage.removeItem('token');
+            document.getElementById('loginMessage').textContent = '';
+            updateUI();
+        }
+
+        // Actualizar UI al cargar la página
+        updateUI();
+    </script>
+</body>
+</html>
