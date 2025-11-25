@@ -1,4 +1,4 @@
-import { getAllProductsService, getProductByIdService, addProductService, deleteProductService } from '../services/products.services.js';
+import { getAllProductsService, getProductByIdService, addProductService, deleteProductService, updateProductService } from '../services/products.services.js';
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -43,6 +43,24 @@ export const addProduct = async (req, res) => {
     res.status(201).json(addedProduct);
   } catch (error) {
     res.status(500).json({ message: 'Error al agregar el producto', error });
+  }
+};
+
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category, name, price } = req.body;
+
+    if (!id || !category || !name || !price) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios: id, category, name, price.' });
+    }
+
+    const updatedProduct = { id, category, name, price };
+    await updateProductService(updatedProduct);
+
+    res.status(200).json({ message: 'Producto actualizado correctamente.', product: updatedProduct });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar el producto', error });
   }
 };
 

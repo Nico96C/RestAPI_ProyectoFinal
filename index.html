@@ -1,67 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
-        form { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 3px; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        #loginMessage { margin-top: 10px; padding: 10px; border-radius: 3px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <h1>Sistema de Login</h1>
-    
+    <header id="header">
+        <h2>Bienvenido - Sistema de Login</h1>
+            <nav>
+                <button id="dark-mode"></button>
+            </nav>
+    </header>
+
     <div id="login-section">
         <h2>Inicia Sesión</h2>
         <form id="loginForm">
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email" value="test@gmail.com" required>
-            
+            <input type="email" id="email" name="email" value="test@gmail.com" placeholder="Correo Electronico..."
+                required>
+
             <label for="password">Contraseña:</label>
-            <input type="password" id="password" name="password" value="123456" required>
-            
-            <button type="submit">Login</button>
+            <input type="password" id="password" name="password" placeholder="Contraseña..." required>
+
+            <button type="submit"><strong>Iniciar Sesión</strong></button>
         </form>
         <p id="loginMessage"></p>
     </div>
 
     <div id="dashboard-section" style="display:none;">
-        <h2>Bienvenido</h2>
-        <p>Token guardado: <strong id="tokenDisplay"></strong></p>
-        
-        <h3>Productos</h3>
+        <h2>Inicio de Sesión Correcto</h2>
+        <hr>
+
+        <div>
+            <h3>Agregar Productos</h3>
+            <input type="text" id="productName" placeholder="Nombre del Producto">
+            <input type="number" id="productPrice" placeholder="Precio del Producto">
+            <select id="productCategory">
+                <option value="" disabled selected>Categoría del Producto</option>
+                <option value="electrónica">electrónica</option>
+                <option value="bebida">bebida</option>
+                <option value="ropa">ropa</option>
+            </select>
+            <div id="btn-op">
+                <button id="addProductBtn" onclick="addItem()">Agregar Producto</button>
+                <button id="updateProductBtn" onclick="updateItem()">Actualizar Producto</button>
+            </div>
+        </div>
+
+        <h3>Productos Existentes</h3>
         <ul id="items-list"></ul>
-        
+
         <button onclick="logout()">Cerrar Sesión</button>
     </div>
 
     <script>
         const API_BASE = 'http://localhost:3000/api';
 
-        // Función para obtener el token
         const getToken = () => localStorage.getItem('token');
 
-        // Función para hacer fetch con autenticación
         const authFetch = (url, options = {}) => {
             const token = getToken();
             const headers = {
                 'Content-Type': 'application/json',
                 ...options.headers
             };
-            
+
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
-            
+
             return fetch(url, { ...options, headers });
         };
 
-        // Obtener todos los productos
+        document.getElementById('dark-mode').addEventListener('click', darkmode);
+
+        function darkmode() {
+            document.body.classList.toggle('dark-mode');
+            // localStorage //
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode ? 'true' : 'false');
+            updateDarkModeButton();
+        }
+
+        // Actualizar el texto del botón //
+        function updateDarkModeButton() {
+            const btn = document.getElementById('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                btn.textContent = 'Modo Claro';
+            } else {
+                btn.textContent = 'Modo Oscuro';
+            }
+        }
+
+        // Cargar el dark mode al iniciar //
+        function loadDarkModePreference() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            updateDarkModeButton();
+        }
+
+        // Obtener todos los productos //
         async function allItems() {
             const token = getToken();
             if (!token) {
@@ -71,19 +115,42 @@
 
             try {
                 const response = await authFetch(`${API_BASE}/products`);
-                
+
                 if (!response.ok) {
                     console.error('Error al obtener productos:', response.status);
                     return;
                 }
-                
+
                 const items = await response.json();
                 const itemsList = document.getElementById('items-list');
                 itemsList.innerHTML = '';
-                
+
                 items.forEach(item => {
                     const li = document.createElement('li');
-                    li.textContent = `${item.name} - $${item.price} (${item.category})`;
+
+                    const productInfo = document.createElement('span');
+                    productInfo.textContent = `${item.name} - $${item.price} (${item.category})`;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Eliminar';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteProduct(item.id || item.firebaseId);
+                    };
+
+                    li.appendChild(productInfo);
+                    li.appendChild(deleteBtn);
+
+                    // Hacer el li seleccionable
+                    li.style.cursor = 'pointer';
+                    li.onclick = (e) => {
+                        e.stopPropagation();
+                        if (confirm(`¿Deseas seleccionar: ${item.name}?`)) {
+                            selectProduct(item);
+                        }
+                    };
+
                     itemsList.appendChild(li);
                 });
             } catch (error) {
@@ -91,27 +158,160 @@
             }
         }
 
-        // Mostrar/ocultar secciones según si hay token
+        // Seleccionar producto //
+        function selectProduct(item) {
+            selectedProductId = item.id || item.firebaseId;
+            document.getElementById('productName').value = item.name;
+            document.getElementById('productPrice').value = item.price;
+            document.getElementById('productCategory').value = item.category;
+            console.log('Producto seleccionado:', item);
+        }
+
+        // Actualizar producto //
+        async function updateItem() {
+            if (!selectedProductId) {
+                alert('Por favor, selecciona un producto primero');
+                return;
+            }
+
+            const name = document.getElementById('productName').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const category = document.getElementById('productCategory').value;
+
+            if (!name || !price || !category) {
+                alert('Por favor, completa todos los campos');
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_BASE}/products/${selectedProductId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name, price, category, id: selectedProductId })
+                });
+
+                if (response.ok) {
+                    alert('Producto actualizado exitosamente');
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productCategory').value = '';
+                    selectedProductId = null;
+                    setTimeout(() => allItems(), 100);
+                } else {
+                    const error = await response.json();
+                    console.error('Error al actualizar producto:', error.message);
+                    alert('Error al actualizar: ' + error.message);
+                }
+            } catch (error) {
+                console.error('Error updating item:', error);
+                alert('Error al actualizar el producto');
+            }
+
+            if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_BASE}/products/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    console.log('Producto eliminado exitosamente');
+                    allItems(); // Actualizar la lista
+                } else {
+                    const error = await response.json();
+                    console.error('Error al eliminar producto:', error.message);
+                    alert('Error al eliminar el producto: ' + error.message);
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Error al eliminar el producto');
+            }
+        }
+
+        // Eliminar producto //
+        async function deleteProduct(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+                return;
+            }
+
+            try {
+                const response = await authFetch(`${API_BASE}/products/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    console.log('Producto eliminado exitosamente');
+                    allItems(); // Actualizar la lista
+                } else {
+                    const error = await response.json();
+                    console.error('Error al eliminar producto:', error.message);
+                    alert('Error al eliminar el producto: ' + error.message);
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Error al eliminar el producto');
+            }
+        }
+
+        async function addItem() {
+
+            const response = await authFetch(`${API_BASE}/products`);
+
+            if (!response.ok) {
+                console.error('Error al obtener productos:', response.status);
+                return;
+            }
+
+            const items = await response.json();
+
+            const name = document.getElementById('productName').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const category = document.getElementById('productCategory').value;
+            const id = items.length + 1;
+            console.log(id, name, price, category);
+
+            try {
+                const response = await authFetch(`${API_BASE}/products/create`, {
+                    method: 'POST',
+                    body: JSON.stringify({ name, price, category, id })
+                });
+
+                if (response.ok) {
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productCategory').value = '';
+                    allItems();
+                } else {
+                    const error = await response.json();
+                    console.error('Error al agregar producto:', error.message);
+                }
+            } catch (error) {
+                console.error('Error adding item:', error);
+            }
+        }
+
+        // Mostrar/ocultar secciones según si hay token //
         function updateUI() {
             const token = getToken();
             if (token) {
                 document.getElementById('login-section').style.display = 'none';
                 document.getElementById('dashboard-section').style.display = 'block';
-                document.getElementById('tokenDisplay').textContent = token.substring(0, 20) + '...';
-                allItems(); // Cargar productos cuando se muestra el dashboard
+                allItems();
+
             } else {
                 document.getElementById('login-section').style.display = 'block';
                 document.getElementById('dashboard-section').style.display = 'none';
             }
         }
 
-        // Manejar el login
+        // Manejar el login //
         document.getElementById('loginForm').addEventListener('submit', async (event) => {
             event.preventDefault();
 
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const messageEl = document.getElementById('loginMessage');
+            const message = document.getElementById('loginMessage');
 
             try {
                 const response = await fetch(`${API_BASE}/login`, {
@@ -125,25 +325,25 @@
                 if (response.ok) {
                     const data = await response.json();
                     localStorage.setItem('token', data.token);
-                    messageEl.textContent = '✓ Login exitoso';
-                    messageEl.style.color = 'green';
-                    messageEl.style.backgroundColor = '#d4edda';
+                    message.textContent = '✓ Login exitoso';
+                    message.style.color = 'green';
+                    message.style.backgroundColor = '#d4edda';
                     setTimeout(() => updateUI(), 1000);
                 } else {
                     const error = await response.json();
-                    messageEl.textContent = '✗ Error: ' + error.message;
-                    messageEl.style.color = 'white';
-                    messageEl.style.backgroundColor = '#f8d7da';
+                    message.textContent = '✗ Error: ' + error.message;
+                    message.style.color = 'white';
+                    message.style.backgroundColor = '#f8d7da';
                 }
             } catch (error) {
-                messageEl.textContent = '✗ Error de conexión: ' + error.message;
-                messageEl.style.color = 'white';
-                messageEl.style.backgroundColor = '#f8d7da';
+                message.textContent = '✗ Error de conexión: ' + error.message;
+                message.style.color = 'white';
+                message.style.backgroundColor = '#f8d7da';
                 console.error('Error:', error);
             }
         });
 
-        // Función para logout
+        // Función para logout //
         function logout() {
             localStorage.removeItem('token');
             document.getElementById('loginMessage').textContent = '';
@@ -152,6 +352,9 @@
 
         // Actualizar UI al cargar la página
         updateUI();
+        loadDarkModePreference();
+
     </script>
 </body>
+
 </html>

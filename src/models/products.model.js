@@ -15,7 +15,20 @@ export function obtenerProducto(id){
       } else {
         // docSnap.data() will be undefined in this case
         console.log("No such document!");
-        res();
+
+        const productsRef = collection(db, "products");
+        const q = query(productsRef, where("id", "==", id)); // Buscar por el campo `id` //
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          querySnapshot.forEach((doc) => {
+            console.log("Found document with manual ID:", doc.id, doc.data());
+            res(doc.data());
+          });
+        } else {
+          console.log("No such document with manual ID!");
+          res(); // No se encontró ningún documento
+        }
       }
     }catch(error){
       console.log(error)
@@ -71,7 +84,9 @@ export function actualizarProducto(producto){
     new Promise(async (res, rej) => {
       try{
         await updateDoc(doc(db, "products", producto.id), {
-          precio: producto.precio
+          name: producto.name,
+          price: producto.price,
+          category: producto.category
         })
         console.log("producto actualizado")
         res()
