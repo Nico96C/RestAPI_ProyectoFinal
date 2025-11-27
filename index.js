@@ -17,7 +17,7 @@ app.use(express.json());
 // Servir archivos estáticos desde la raíz del proyecto
 app.use(express.static(__dirname));
 
-app.use('/api', authRoutes);
+app.use('/auth', authRoutes);
 
 const corsConfig = {
     origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'https://rest-api-proyecto-final.vercel.app'], //dominios
