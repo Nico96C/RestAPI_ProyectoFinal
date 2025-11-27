@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const corsConfig = {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:5500'], //dominios
+    origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'https://rest-api-proyecto-final.vercel.app'], //dominios
     method: ['GET', 'POST', 'PUT', 'DELETE'], //metodos
     allowedHeaders: ['Content-Type', 'Authorization'], //cabeceras
     exposedHeaders: ['Content-Type', 'Authorization'], //cabeceras expuestas
