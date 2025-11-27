@@ -1,5 +1,5 @@
 import { db } from "../data/data.js";
-import { doc, getDoc, collection, getDocs, setDoc, addDoc, updateDoc, deleteDoc, } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 
 export function obtenerProducto(id){
   return new Promise(async (res, rej) => {
@@ -8,6 +8,7 @@ export function obtenerProducto(id){
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
+        
         console.log("Snap data: ", docSnap)
         console.log("Document ID:", docSnap.id);
         console.log("Document data:", docSnap.data());
@@ -15,20 +16,7 @@ export function obtenerProducto(id){
       } else {
         // docSnap.data() will be undefined in this case
         console.log("No such document!");
-
-        const productsRef = collection(db, "products");
-        const q = query(productsRef, where("id", "==", id)); // Buscar por el campo `id` //
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-          querySnapshot.forEach((doc) => {
-            console.log("Found document with manual ID:", doc.id, doc.data());
-            res(doc.data());
-          });
-        } else {
-          console.log("No such document with manual ID!");
-          res(); // No se encontró ningún documento
-        }
+        res(); // No se encontró ningún documento
       }
     }catch(error){
       console.log(error)
