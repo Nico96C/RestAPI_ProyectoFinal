@@ -1,12 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import rutasProductos from './src/routes/products.routes.js';
 import authRoutes from './src/routes/auth.routes.js';
 import { authenticateToken } from './src/middleWare/authentication.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
+
+// Servir archivos estáticos desde la raíz del proyecto
+app.use(express.static(__dirname));
 
 const corsConfig = {
     origin: ['http://localhost:3000', 'http://127.0.0.1:5500'], //dominios
@@ -25,7 +34,7 @@ app.use(authenticateToken);
 app.use('/api', rutasProductos);
 
 app.get('/', (req, res) => {
-    res.send('Hola Mundo, servidor con CORS configurado!');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.use((req, res, next) => {
