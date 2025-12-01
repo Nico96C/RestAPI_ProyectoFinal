@@ -16,6 +16,8 @@ app.use(express.json());
 
 app.use(express.static(__dirname));
 
+app.use('/api', authRoutes);
+
 const corsConfig = {
     origin: ['http://localhost:3000', 'http://127.0.0.1:5500', 'https://rest-api-proyecto-final.vercel.app'], //dominios
     method: ['GET', 'POST', 'PUT', 'DELETE'], //metodos
@@ -27,7 +29,6 @@ const corsConfig = {
 }
 app.use(cors(corsConfig));
 
-app.use('/api', authRoutes);
 app.use(authenticateToken);
 
 app.use('/api', rutasProductos);
