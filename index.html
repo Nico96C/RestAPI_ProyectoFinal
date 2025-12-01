@@ -321,7 +321,7 @@
 
                 const productInfo = document.createElement('span');
                 const itemId = item.id || item.firebaseId;
-                productInfo.textContent = `${item.name} - $${item.price} (${item.category})`;
+                productInfo.textContent = `ID: ${item.id} / ${item.name} - $${item.price} (${item.category})`;
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Eliminar';
